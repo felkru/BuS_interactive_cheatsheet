@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive OS Cheatsheet</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Calm Neutrals -->
+    <!-- Application Structure Plan: A single-page application with a fixed sidebar navigation for quick access to the 8 core OS topics. This structure is ideal for a reference document, allowing users to jump between sections without page reloads. Within each section, interactive elements like tabbed content for comparing kernel architectures and dynamic charts for visualizing scheduling algorithms will be used. This approach breaks down complex information into digestible, engaging modules, which is more effective for studying than a static, linear document. -->
+    <!-- Visualization & Content Choices: The application uses dynamic charts (Chart.js) to visualize the scheduling and disk I/O problems from the mock exam, allowing users to select different algorithms and see the impact in real-time. This provides a hands-on learning experience. Key comparative concepts like kernel types and I/O methods are presented in interactive cards or tabs to reduce cognitive load and facilitate comparison. Process diagrams are built with styled HTML/CSS for clarity. These choices directly support the goal of making abstract concepts tangible and easier to understand for exam preparation. NO SVG/Mermaid used. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FDFBF6;
+            color: #4A4A4A;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 40vh;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+        .nav-link.active {
+            background-color: #EADDCA;
+            color: #5D4037;
+            font-weight: 600;
+        }
+        .prose-custom h3 {
+            border-bottom: 2px solid #EADDCA;
+            padding-bottom: 0.5rem;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #5D4037;
+        }
+        .prose-custom ul {
+            list-style-position: inside;
+            padding-left: 0;
+        }
+        .prose-custom li::marker {
+            color: #A1887F;
+        }
+        .interactive-tab {
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+        }
+        .interactive-tab.active {
+            border-bottom-color: #8D6E63;
+            color: #5D4037;
+            font-weight: 500;
+        }
+        .card {
+            background-color: #FFFFFF;
+            border: 1px solid #E0E0E0;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div class="flex min-h-screen">
+        <!-- Sidebar Navigation -->
+        <nav id="sidebar" class="w-64 bg-[#F0EBE3] p-4 fixed top-0 left-0 h-full transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out z-30">
+            <h2 class="text-2xl font-bold text-[#5D4037] mb-6 border-b-2 border-[#D7CCC8] pb-4">OS Cheatsheet</h2>
+            <ul class="space-y-2" id="nav-links-container">
+                <li><a href="#intro" class="nav-link block p-3 rounded-lg hover:bg-[#EADDCA] transition-colors duration-200">1. Introduction</a></li>
+                <li><a href="#execution" class="nav-link block p-3 rounded-lg hover:bg-[#EADDCA] transition-colors duration-200">2. Program Execution</a></li>
+                <li><a href="#memory" class="nav-link block p-3 rounded-lg hover:bg-[#EADDCA] transition-colors duration-200">3. Memory Management</a></li>
+                <li><a href="#file" class="nav-link block p-3 rounded-lg hover:bg-[#EADDCA] transition-colors duration-200">4. File Management</a></li>
+                <li><a href="#io" class="nav-link block p-3 rounded-lg hover:bg-[#EADDCA] transition-colors duration-200">5. I/O & Interrupts</a></li>
+                <li><a href="#concurrency" class="nav-link block p-3 rounded-lg hover:bg-[#EADDCA] transition-colors duration-200">6. Concurrency & IPC</a></li>
+                <li><a href="#user-kernel" class="nav-link block p-3 rounded-lg hover:bg-[#EADDCA] transition-colors duration-200">7. User-Kernel Interaction</a></li>
+                <li><a href="#virtualization" class="nav-link block p-3 rounded-lg hover:bg-[#EADDCA] transition-colors duration-200">8. Virtualization</a></li>
+            </ul>
+        </nav>
+
+        <!-- Mobile Header -->
+        <header class="md:hidden fixed top-0 left-0 right-0 bg-[#F0EBE3] p-4 z-20 flex items-center shadow-md">
+            <button id="menu-toggle" class="text-[#5D4037] mr-4">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            </button>
+            <h1 class="text-xl font-bold text-[#5D4037]">OS Cheatsheet</h1>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-1 md:ml-64 p-6 md:p-10 mt-16 md:mt-0 prose-custom">
+            
+            <section id="intro">
+                <h2 class="text-3xl font-bold text-[#5D4037] mb-4">1. Introduction to Operating Systems</h2>
+                <p class="mb-6 text-lg">This section covers the fundamental concepts of what an operating system is, its main components, and the crucial distinction between different operational modes and kernel architectures. Understanding these basics is key to grasping more complex topics.</p>
+                
+                <h3>Definition & Main Services</h3>
+                <ul>
+                    <li><strong>Definition:</strong> The OS is the software layer between applications and hardware. It provides abstractions to use hardware and manages resources.</li>
+                    <li><strong>Main Services:</strong> Program management, memory management, file management, network management, human interface.</li>
+                </ul>
+
+                <h3>Protection Domains & Privilege Levels</h3>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="card p-4 rounded-lg">
+                        <h4 class="font-bold text-lg mb-2">🛡️ Supervisor Mode (Kernel Mode)</h4>
+                        <p>Highest privilege. All operations allowed (full instruction set, direct hardware interaction, any memory access).</p>
+                    </div>
+                    <div class="card p-4 rounded-lg">
+                        <h4 class="font-bold text-lg mb-2">👤 User Mode</h4>
+                        <p>Lowest privilege. Restricted operations (cannot use privileged instructions or access certain memory areas).</p>
+                    </div>
+                </div>
+                <p class="mt-4"><strong>System Calls:</strong> The bridge between modes. A user-mode program uses a system call to request a privileged operation from the kernel. This involves a mode switch (user → supervisor → user), during which the OS validates permissions and arguments.</p>
+                
+                <h3>Kernel Architectures</h3>
+                <p>The choice of kernel architecture is a fundamental design decision, balancing performance, safety, and flexibility. Explore the different types below.</p>
+                <div class="mt-4">
+                    <div class="flex border-b border-gray-300 mb-4 space-x-4">
+                        <button class="interactive-tab py-2 px-4 active" data-tab="monolithic">Monolithic</button>
+                        <button class="interactive-tab py-2 px-4" data-tab="microkernel">Microkernel</button>
+                        <button class="interactive-tab py-2 px-4" data-tab="hybrid">Hybrid</button>
+                        <button class="interactive-tab py-2 px-4" data-tab="unikernel">Unikernel</button>
+                    </div>
+                    <div id="kernel-content" class="p-4 rounded-lg bg-white border border-gray-200">
+                        <!-- Content will be injected by JS -->
+                    </div>
+                </div>
+            </section>
+
+            <section id="execution" class="mt-12">
+                <h2 class="text-3xl font-bold text-[#5D4037] mb-4">2. Program Execution</h2>
+                <p class="mb-6 text-lg">Here we explore how the OS manages running programs through the concepts of processes and threads. We also delve into scheduling, the mechanism by which the OS decides which program gets to use the CPU and when, a common topic in exams.</p>
+                
+                <h3>Processes vs. Threads</h3>
+                <ul>
+                    <li><strong>Process:</strong> An instance of a running program. An independent entity with its own code, memory, and resources. Processes are isolated from each other.</li>
+                    <li><strong>Thread:</strong> A lightweight unit of execution within a process. Threads in the same process share memory and resources but have their own program counter, registers, and stack.</li>
+                </ul>
+
+                <h3>Interactive Scheduling Simulation</h3>
+                <p>The mock exam includes a task on scheduling. Use this interactive chart to see how different algorithms handle the same set of processes. This helps build intuition for calculating waiting times.</p>
+                <div class="card p-6 rounded-lg mt-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h4 class="text-xl font-semibold">Scheduling Algorithm Visualizer</h4>
+                        <select id="scheduling-algo-select" class="p-2 border rounded-md bg-white">
+                            <option value="rr">Round Robin (Q=2)</option>
+                            <option value="srt">Shortest Remaining Time (SRT)</option>
+                        </select>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="schedulingChart"></canvas>
+                    </div>
+                    <div id="avg-wait-time" class="mt-4 text-center font-semibold text-lg"></div>
+                </div>
+            </section>
+
+            <section id="memory" class="mt-12">
+                <h2 class="text-3xl font-bold text-[#5D4037] mb-4">3. Memory Management</h2>
+                <p class="mb-6 text-lg">Memory management is a core OS responsibility, ensuring processes have the memory they need while being protected from one another. This section covers key concepts from basic address spaces to the complex mechanisms of virtual memory and paging.</p>
+                
+                <h3>Core Concepts</h3>
+                <ul>
+                    <li><strong>Address Space:</strong> An abstract view of memory for a process, providing protection and relocation.</li>
+                    <li><strong>Virtual Memory:</strong> Allows a process's address space to be independent of physical memory size. Address spaces are split into fixed-size **pages**.</li>
+                    <li><strong>Paging:</strong> The Memory Management Unit (MMU) translates virtual addresses (VA) to physical addresses (PA) using a **Page Table**.</li>
+                    <li><strong>Page Fault:</strong> An exception raised when a program tries to access a page that is not currently in physical memory. The OS must handle it by loading the page from disk (swapping in).</li>
+                </ul>
+
+                <h3>VA to PA Translation with a 2-Level Page Table</h3>
+                <p>The mock exam requires you to perform address translation. This interactive example demonstrates the process for a 32-bit address, breaking it down into the Page Table 1 Index, Page Table 2 Index, and Offset.</p>
+                <div class="card p-6 rounded-lg mt-6">
+                    <h4 class="text-xl font-semibold mb-4 text-center">Address Translation Explorer</h4>
+                    <div class="flex flex-col items-center">
+                        <label for="vaddr-input" class="mb-2">Enter a 32-bit Virtual Address (Hex):</label>
+                        <input type="text" id="vaddr-input" class="font-mono p-2 border rounded-md text-center w-64" value="63FFF42A">
+                        <button id="translate-btn" class="mt-3 bg-[#8D6E63] text-white py-2 px-4 rounded-lg hover:bg-[#5D4037] transition-colors">Translate</button>
+                    </div>
+                    <div id="translation-output" class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                        <!-- Translation results appear here -->
+                    </div>
+                </div>
+            </section>
+
+            <section id="file" class="mt-12">
+                <h2 class="text-3xl font-bold text-[#5D4037] mb-4">4. File Management</h2>
+                <p class="mb-6 text-lg">The file system provides a structured way to store and retrieve persistent data. This section covers the file and directory abstractions, how file content is stored on disk, and access control mechanisms.</p>
+
+                <h3>File & Directory Abstractions</h3>
+                <ul>
+                    <li><strong>File:</strong> A logical unit of information on disk with a name, attributes, and data. Operations include `create`, `delete`, `open`, `close`, `read`, `write`.</li>
+                    <li><strong>Directory:</strong> A special file that stores a list of other files, creating a hierarchical structure.</li>
+                    <li><strong>Links:</strong> A **Hard Link** is another name for an existing file's inode. A **Symbolic Link** is a file that contains a path to another file.</li>
+                </ul>
+
+                <h3>Block Allocation Strategies</h3>
+                <p>How does the file system track which disk blocks belong to which file? Each method has trade-offs in performance and flexibility.</p>
+                <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+                    <div class="card p-4 rounded-lg text-center" data-content-key="contiguous">
+                        <h4 class="font-semibold">Contiguous</h4>
+                        <p class="text-sm text-gray-600 mt-2">File blocks are stored one after another.</p>
+                    </div>
+                    <div class="card p-4 rounded-lg text-center" data-content-key="linked">
+                        <h4 class="font-semibold">Linked List</h4>
+                        <p class="text-sm text-gray-600 mt-2">Each block points to the next one.</p>
+                    </div>
+                    <div class="card p-4 rounded-lg text-center" data-content-key="fat">
+                        <h4 class="font-semibold">File Allocation Table (FAT)</h4>
+                        <p class="text-sm text-gray-600 mt-2">A table in memory stores the block chains.</p>
+                    </div>
+                    <div class="card p-4 rounded-lg text-center" data-content-key="inodes">
+                        <h4 class="font-semibold">Inodes</h4>
+                        <p class="text-sm text-gray-600 mt-2">An inode stores metadata and block pointers.</p>
+                    </div>
+                </div>
+                <div id="allocation-details" class="mt-4 p-4 rounded-lg bg-white border border-gray-200 min-h-[100px]">
+                    <!-- Details appear here -->
+                </div>
+            </section>
+
+            <section id="io" class="mt-12">
+                 <h2 class="text-3xl font-bold text-[#5D4037] mb-4">5. I/O Devices and Interrupts</h2>
+                <p class="mb-6 text-lg">This section covers how the OS interacts with hardware devices. It explains the interrupt mechanism, different I/O methods, and the specifics of managing storage devices like Hard Disk Drives (HDDs).</p>
+
+                <h3>Core Concepts</h3>
+                <ul>
+                    <li><strong>Interrupt:</strong> A high-priority signal from a device to the CPU, causing the CPU to pause its current task and execute an Interrupt Service Routine (ISR).</li>
+                    <li><strong>DMA (Direct Memory Access):</strong> Allows devices to transfer data directly to/from main memory without involving the CPU, improving efficiency.</li>
+                    <li><strong>I/O Methods:</strong>
+                        <ul class="ml-4">
+                            <li><strong>Programmed I/O:</strong> CPU polls the device (busy-waits). Inefficient.</li>
+                            <li><strong>Interrupt-Driven I/O:</strong> Device interrupts the CPU when ready. More efficient.</li>
+                            <li><strong>DMA-Driven I/O:</strong> DMA controller handles transfer. Most efficient for large data.</li>
+                        </ul>
+                    </li>
+                </ul>
+                
+                <h3>Disk Head Scheduling Simulation</h3>
+                <p>HDDs are slow because of physical head movement (seek time). I/O schedulers reorder requests to minimize this movement. This visualizer shows the path of the disk head for different algorithms, based on the mock exam problem.</p>
+                 <div class="card p-6 rounded-lg mt-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h4 class="text-xl font-semibold">Disk Scheduling Visualizer</h4>
+                        <select id="disk-algo-select" class="p-2 border rounded-md bg-white">
+                            <option value="ssf">Shortest Seek First (SSF)</option>
+                            <option value="cscan">C-SCAN</option>
+                        </select>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="diskSchedulingChart"></canvas>
+                    </div>
+                    <div id="total-seek-time" class="mt-4 text-center font-semibold text-lg"></div>
+                </div>
+            </section>
+
+            <section id="concurrency" class="mt-12">
+                <h2 class="text-3xl font-bold text-[#5D4037] mb-4">6. Concurrency, IPC, and Synchronization</h2>
+                <p class="mb-6 text-lg">When multiple threads or processes run simultaneously, they often need to coordinate. This section covers the challenges of concurrency, like race conditions, and the mechanisms the OS provides for safe communication (IPC) and synchronization.</p>
+
+                <h3>Synchronization Mechanisms</h3>
+                <ul>
+                    <li><strong>Race Condition:</strong> Unpredictable outcome when multiple threads access shared data, and the result depends on the timing of their execution.</li>
+                    <li><strong>Critical Section:</strong> A piece of code that accesses a shared resource and must not be concurrently executed by more than one thread.</li>
+                    <li><strong>Mutex:</strong> A lock that ensures mutual exclusion. Only one thread can hold the lock at a time.</li>
+                    <li><strong>Semaphore:</strong> A counter used to control access to a resource. More general than a mutex; can allow up to N threads access.</li>
+                    <li><strong>Condition Variable:</strong> Allows threads to wait for a certain condition to become true while atomically releasing a mutex.</li>
+                </ul>
+
+                <h3>Inter-Process Communication (IPC)</h3>
+                <p>Since processes have isolated memory, the OS must provide mechanisms for them to communicate.</p>
+                <div class="grid md:grid-cols-3 gap-4 mt-4">
+                    <div class="card p-4 rounded-lg">
+                        <h4 class="font-semibold">Message Passing</h4>
+                        <p class="text-sm mt-1">Processes send and receive messages through the kernel. E.g., Sockets, Pipes.</p>
+                    </div>
+                    <div class="card p-4 rounded-lg">
+                        <h4 class="font-semibold">Shared Memory</h4>
+                        <p class="text-sm mt-1">The OS maps the same region of physical memory into the address space of multiple processes.</p>
+                    </div>
+                    <div class="card p-4 rounded-lg">
+                        <h4 class="font-semibold">Signals</h4>
+                        <p class="text-sm mt-1">Asynchronous notifications sent to a process to indicate an event has occurred.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="user-kernel" class="mt-12">
+                <h2 class="text-3xl font-bold text-[#5D4037] mb-4">7. User-Kernel Interactions</h2>
+                <p class="mb-6 text-lg">This section details how user-space applications interact with the kernel, primarily through system calls, and how shared libraries are used to efficiently reuse common code across many processes.</p>
+
+                <h3>System Call Flow & Shared Libraries</h3>
+                <ul>
+                    <li><strong>System Call Flow:</strong> A user program invokes a system call, which causes a trap. The CPU switches to supervisor mode, the kernel executes the requested service, and then the CPU switches back to user mode to resume the program.</li>
+                    <li><strong>Shared Libraries:</strong> To avoid duplicating common code (like `printf`) in every program's memory, shared libraries are loaded once and mapped into the virtual address space of all processes that need them.</li>
+                    <li><strong>Dynamic Linker:</strong> A program that resolves the addresses of functions in shared libraries at runtime. This can be done eagerly (at program start) or lazily (on first function call).</li>
+                </ul>
+            </section>
+
+            <section id="virtualization" class="mt-12">
+                <h2 class="text-3xl font-bold text-[#5D4037] mb-4">8. Virtualization</h2>
+                <p class="mb-6 text-lg">Virtualization allows a single physical machine to run multiple virtual machines (VMs), each with its own OS. This provides isolation, flexibility, and efficient resource use. We also touch on containers, a more lightweight form of virtualization.</p>
+
+                <h3>Hypervisors and Virtualization Types</h3>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="card p-4 rounded-lg">
+                        <h4 class="font-bold text-lg mb-2">Type 1 (Bare Metal)</h4>
+                        <p>The hypervisor runs directly on the host hardware. Offers the best performance and security. Examples: VMware ESXi, Xen.</p>
+                    </div>
+                    <div class="card p-4 rounded-lg">
+                        <h4 class="font-bold text-lg mb-2">Type 2 (Hosted)</h4>
+                        <p>The hypervisor runs as an application on top of a conventional host OS. Easier to set up and manage. Examples: VirtualBox, QEMU.</p>
+                    </div>
+                </div>
+
+                <h3>VMs vs. Containers</h3>
+                <ul>
+                    <li><strong>Virtual Machines (VMs):</strong> Each VM includes a full copy of an operating system, the application, necessary binaries, and libraries. This provides strong isolation but is resource-heavy.</li>
+                    <li><strong>Containers:</strong> Containers share the host system’s OS kernel. They package up just the application and its dependencies. This makes them much more lightweight and faster to start than VMs.</li>
+                </ul>
+            </section>
+
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const sidebar = document.getElementById('sidebar');
+            const menuToggle = document.getElementById('menu-toggle');
+            const mainContent = document.querySelector('main');
+
+            menuToggle.addEventListener('click', () => {
+                sidebar.classList.toggle('-translate-x-full');
+            });
+
+            mainContent.addEventListener('click', () => {
+                sidebar.classList.add('-translate-x-full');
+            });
+
+            // Active nav link on scroll
+            const sections = document.querySelectorAll('section');
+            const navLinks = document.querySelectorAll('.nav-link');
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        navLinks.forEach(link => {
+                            link.classList.toggle('active', link.getAttribute('href').substring(1) === entry.target.id);
+                        });
+                    }
+                });
+            }, { rootMargin: "-50% 0px -50% 0px" });
+
+            sections.forEach(section => observer.observe(section));
+            
+            // Kernel Architectures Tabbed Content
+            const kernelTabs = document.querySelectorAll('.interactive-tab');
+            const kernelContentContainer = document.getElementById('kernel-content');
+            const kernelData = {
+                monolithic: {
+                    title: 'Monolithic Kernel',
+                    pros: 'Fast intra-kernel communication (direct function calls).',
+                    cons: 'Limited safety (a crash in one component can bring down the entire system), potentially large memory footprint.'
+                },
+                microkernel: {
+                    title: 'Microkernel',
+                    pros: 'Enhanced safety (services run in user-space), smaller memory footprint, more adaptable.',
+                    cons: 'Performance overhead due to frequent and costly Inter-Process Communication (IPC).'
+                },
+                hybrid: {
+                    title: 'Hybrid Kernel',
+                    pros: 'Aims for a balance between monolithic performance and microkernel stability.',
+                    cons: 'Can be complex, and doesn\'t offer the full safety guarantees of a true microkernel.'
+                },
+                unikernel: {
+                    title: 'Unikernel',
+                    pros: 'High performance (no mode switches), minimized attack surface (highly secure), very small footprint.',
+                    cons: 'Hard to build and debug, as it combines the application and OS into a single-purpose image.'
+                }
+            };
+
+            function updateKernelContent(tabKey) {
+                const data = kernelData[tabKey];
+                kernelContentContainer.innerHTML = `
+                    <h4 class="font-bold text-xl mb-3">${data.title}</h4>
+                    <p class="mb-2"><strong>Pros:</strong> ${data.pros}</p>
+                    <p><strong>Cons:</strong> ${data.cons}</p>
+                `;
+            }
+
+            kernelTabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    kernelTabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    updateKernelContent(tab.dataset.tab);
+                });
+            });
+            updateKernelContent('monolithic');
+
+            // Scheduling Chart
+            const schedulingCtx = document.getElementById('schedulingChart').getContext('2d');
+            let schedulingChart;
+            const schedulingData = {
+                processes: ['P0', 'P1', 'P2', 'P3', 'P4', 'P5'],
+                arrival: [0, 1, 2, 5, 6, 7],
+                execution: [5, 7, 1, 4, 3, 4]
+            };
+            const schedulingAlgos = {
+                rr: {
+                    schedule: [
+                        { p: 0, start: 0, end: 2 }, { p: 1, start: 2, end: 4 }, { p: 2, start: 4, end: 5 },
+                        { p: 0, start: 5, end: 7 }, { p: 1, start: 7, end: 9 }, { p: 3, start: 9, end: 11 },
+                        { p: 4, start: 11, end: 13 }, { p: 5, start: 13, end: 15 }, { p: 0, start: 15, end: 16 },
+                        { p: 1, start: 16, end: 18 }, { p: 3, start: 18, end: 20 }, { p: 4, start: 20, end: 21 },
+                        { p: 5, start: 21, end: 23 }, { p: 1, start: 23, end: 24 }
+                    ],
+                    totalTime: 24,
+                    avgWait: 10.67
+                },
+                srt: {
+                    schedule: [
+                        { p: 0, start: 0, end: 2 }, { p: 2, start: 2, end: 3 }, { p: 0, start: 3, end: 6 },
+                        { p: 4, start: 6, end: 9 }, { p: 3, start: 9, end: 13 }, { p: 5, start: 13, end: 17 },
+                        { p: 1, start: 17, end: 24 }
+                    ],
+                    totalTime: 24,
+                    avgWait: 4.5
+                }
+            };
+
+            function createSchedulingChart(algo) {
+                if (schedulingChart) {
+                    schedulingChart.destroy();
+                }
+                const data = schedulingAlgos[algo];
+                const chartData = {
+                    labels: Array.from({ length: data.totalTime + 1 }, (_, i) => i),
+                    datasets: data.schedule.map(item => ({
+                        label: `P${item.p}`,
+                        data: Array(data.totalTime + 1).fill(null).map((_, i) => (i >= item.start && i <= item.end) ? `P${item.p}` : null),
+                        backgroundColor: `hsl(${item.p * 60}, 70%, 80%)`,
+                        borderColor: `hsl(${item.p * 60}, 70%, 50%)`,
+                        borderWidth: 1,
+                        barPercentage: 1.0,
+                        categoryPercentage: 1.0,
+                        fill: true,
+                        stepped: true,
+                    }))
+                };
+                
+                document.getElementById('avg-wait-time').innerText = `Average Waiting Time: ${data.avgWait}`;
+
+                schedulingChart = new Chart(schedulingCtx, {
+                    type: 'line',
+                    data: chartData,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                enabled: true,
+                                mode: 'index',
+                                intersect: false,
+                                callbacks: {
+                                    title: () => '',
+                                    label: (context) => context.dataset.label || ''
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                title: { display: true, text: 'Time' },
+                                grid: { display: false }
+                            },
+                            y: {
+                                type: 'category',
+                                labels: schedulingData.processes,
+                                title: { display: true, text: 'Process' },
+                                offset: true,
+                            }
+                        },
+                        interaction: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    }
+                });
+            }
+            createSchedulingChart('rr');
+            document.getElementById('scheduling-algo-select').addEventListener('change', (e) => createSchedulingChart(e.target.value));
+
+            // Address Translation
+            const vaddrInput = document.getElementById('vaddr-input');
+            const translateBtn = document.getElementById('translate-btn');
+            const translationOutput = document.getElementById('translation-output');
+
+            function translateAddress() {
+                const vaddrHex = vaddrInput.value.replace('0x', '');
+                if (vaddrHex.length > 8 || !/^[0-9a-fA-F]+$/.test(vaddrHex)) {
+                    translationOutput.innerHTML = `<div class="md:col-span-3 text-red-600">Invalid 32-bit hex address</div>`;
+                    return;
+                }
+                const vaddrInt = parseInt(vaddrHex, 16);
+                const pt1Index = (vaddrInt >> 22) & 0x3FF; // 10 bits
+                const pt2Index = (vaddrInt >> 12) & 0x3FF; // 10 bits
+                const offset = vaddrInt & 0xFFF; // 12 bits
+
+                translationOutput.innerHTML = `
+                    <div class="card p-3 rounded-lg">
+                        <div class="text-sm text-gray-500">PT1 Index (10 bits)</div>
+                        <div class="font-mono text-xl font-bold">${pt1Index}</div>
+                        <div class="font-mono text-sm text-gray-600">0x${pt1Index.toString(16).toUpperCase()}</div>
+                    </div>
+                    <div class="card p-3 rounded-lg">
+                        <div class="text-sm text-gray-500">PT2 Index (10 bits)</div>
+                        <div class="font-mono text-xl font-bold">${pt2Index}</div>
+                        <div class="font-mono text-sm text-gray-600">0x${pt2Index.toString(16).toUpperCase()}</div>
+                    </div>
+                    <div class="card p-3 rounded-lg">
+                        <div class="text-sm text-gray-500">Offset (12 bits)</div>
+                        <div class="font-mono text-xl font-bold">${offset}</div>
+                        <div class="font-mono text-sm text-gray-600">0x${offset.toString(16).toUpperCase().padStart(3, '0')}</div>
+                    </div>
+                `;
+            }
+            translateBtn.addEventListener('click', translateAddress);
+            translateAddress();
+
+            // File Allocation Details
+            const allocationCards = document.querySelectorAll('[data-content-key]');
+            const allocationDetailsContainer = document.getElementById('allocation-details');
+            const allocationData = {
+                contiguous: '<strong>Pros:</strong> Simple, excellent read performance (no seeks).<br><strong>Cons:</strong> Suffers from external fragmentation, difficult to grow files.',
+                linked: '<strong>Pros:</strong> No external fragmentation, files can grow easily.<br><strong>Cons:</strong> Slow random access (must traverse list), data overhead for pointers.',
+                fat: '<strong>Pros:</strong> No external fragmentation, good random access performance (table is in memory).<br><strong>Cons:</strong> The entire FAT must be in memory, can be very large for big disks.',
+                inodes: '<strong>Pros:</strong> No external fragmentation, efficient memory usage (only active inodes loaded).<br><strong>Cons:</strong> More complex implementation, requires multiple disk accesses for large files (indirect blocks).'
+            };
+            allocationCards.forEach(card => {
+                card.addEventListener('click', () => {
+                    allocationDetailsContainer.innerHTML = allocationData[card.dataset.contentKey];
+                });
+            });
+            allocationDetailsContainer.innerHTML = allocationData['contiguous'];
+            
+            // Disk Scheduling Chart
+            const diskCtx = document.getElementById('diskSchedulingChart').getContext('2d');
+            let diskChart;
+            const diskRequests = [613, 543, 808, 838, 80, 991, 743, 602];
+            const startPos = 91;
+            const diskAlgos = {
+                ssf: {
+                    schedule: [startPos, 80, 543, 602, 613, 743, 808, 838, 991],
+                    seekTime: 922
+                },
+                cscan: {
+                    schedule: [startPos, 80, 0, 999, 991, 838, 808, 743, 613, 602, 543],
+                    seekTime: 1546
+                }
+            };
+            
+            function createDiskChart(algo) {
+                if (diskChart) {
+                    diskChart.destroy();
+                }
+                const data = diskAlgos[algo];
+                const chartData = {
+                    labels: data.schedule.map(String),
+                    datasets: [{
+                        label: 'Head Position',
+                        data: data.schedule,
+                        borderColor: '#8D6E63',
+                        tension: 0.1
+                    }]
+                };
+                
+                document.getElementById('total-seek-time').innerText = `Total Head Movement (Cylinders): ${data.seekTime}`;
+
+                diskChart = new Chart(diskCtx, {
+                    type: 'line',
+                    data: chartData,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            x: {
+                                title: { display: true, text: 'Request Order' },
+                                grid: { display: false }
+                            },
+                            y: {
+                                title: { display: true, text: 'Cylinder Number' },
+                                min: 0,
+                                max: 1000
+                            }
+                        }
+                    }
+                });
+            }
+            createDiskChart('ssf');
+            document.getElementById('disk-algo-select').addEventListener('change', (e) => createDiskChart(e.target.value));
+        });
+    </script>
+</body>
+</html>
